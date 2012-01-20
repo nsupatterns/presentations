@@ -1,0 +1,176 @@
+\documentclass[handout]{beamer}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{listings}
+
+%\ifx\pdftexversion\undefined
+%\usepackage[dvips]{graphicx}
+%\else
+%\usepackage[pdftex]{graphicx}
+%\DeclareGraphicsRule{*}{mps}{*}{}
+%#\fi
+
+\definecolor{javared}{rgb}{0.6,0,0} % for strings
+\definecolor{javagreen}{rgb}{0.25,0.5,0.35} % comments
+\definecolor{javapurple}{rgb}{0.5,0,0.35} % keywords
+\definecolor{javadocblue}{rgb}{0.25,0.35,0.75} % javadoc
+ 
+\lstset{language=Java,
+basicstyle=\footnotesize\ttfamily,
+keywordstyle=\color{javapurple}\bfseries,
+stringstyle=\color{javared},
+commentstyle=\color{javagreen},
+morecomment=[s][\color{javadocblue}]{/**}{*/},
+stepnumber=2,
+numbersep=10pt,
+tabsize=4,
+showspaces=false,
+showstringspaces=false}
+
+
+\title{Паттерн Composite}
+\author{Есилевич Александр}
+
+\begin{document}
+
+\maketitle
+
+\begin{frame}[fragile]
+\frametitle{Перемещение фигур}
+\begin{lstlisting}
+public class Shape {
+    public abstract void move(int dx, int dy);
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Перемещение фигур}
+\begin{lstlisting}
+public class Line extends Shape {
+    public void move(int dx, int dy) {
+        x1 = x1 + dx;
+        x2 = x2 + dx;
+        y1 = y1 + dy;
+        y2 = y2 + dy;
+    }
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Перемещение фигур}
+\begin{lstlisting}
+public class Rectangle extends Shape {
+    public void move(int dx, int dy) {
+        x1 = x1 + dx;
+        x2 = x2 + dx;
+        y1 = y1 + dy;
+        y2 = y2 + dy;
+    }
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Перемещение фигур}
+\begin{lstlisting}
+public class Circle extends Shape {
+    public void move(int dx, int dy) {
+        x = x + dx;
+        y = y + dy;
+    }
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Группировка фигур}
+Добавим класс ShapeGroup, который будет представлять группу фигур.
+
+\begin{lstlisting}
+public class ShapeGroup extends Shape {
+    public void addShape(Shape s);
+    public void removeShape(Shape s);
+
+    public void draw(SystemCanvas canvas);
+    public void move(int dx, int dy);
+
+    private ShapeList shapes;
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Отрисовка группы фигур}
+\begin{lstlisting}
+public class ShapeGroup extends Shape {
+
+    public void draw(SystemCanvas canvas) {
+        ShapeListIterator it = shapes.getFirst();
+        while(!it.isEnd()) {
+            it.getShape().draw(graphics);
+            it = it.getNext();
+        }
+    }
+
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Перемещение группы фигур}
+\begin{lstlisting}
+public class ShapeGroup extends Shape {
+
+    public void move(int dx, int dy) {
+        ShapeListIterator it = shapes.getFirst();
+        while(!it.isEnd()) {
+            it.getShape().move(dx, dy);
+            it = it.getNext();
+        }
+    }
+
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Диаграмма классов}
+\begin{center}
+\includegraphics{shape_group.mps}
+\end{center}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Паттерн Composite}
+Назначение: компонует объекты в древовидные структуры. Позволяет клиентам
+единообразно трактовать индивидуальные и составные объекты.
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Участники}
+\begin{itemize}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Паттерн Composite. Диаграмма классов}
+\begin{center}
+\includegraphics{composite.mps}
+\end{center}
+\end{frame}
+
+
+\end{document}

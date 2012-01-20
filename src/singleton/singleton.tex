@@ -1,0 +1,157 @@
+\documentclass[handout]{beamer}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{listings}
+
+%\ifx\pdftexversion\undefined
+%\usepackage[dvips]{graphicx}
+%\else
+%\usepackage[pdftex]{graphicx}
+%\DeclareGraphicsRule{*}{mps}{*}{}
+%#\fi
+
+\definecolor{javared}{rgb}{0.6,0,0} % for strings
+\definecolor{javagreen}{rgb}{0.25,0.5,0.35} % comments
+\definecolor{javapurple}{rgb}{0.5,0,0.35} % keywords
+\definecolor{javadocblue}{rgb}{0.25,0.35,0.75} % javadoc
+ 
+\lstset{language=Java,
+basicstyle=\footnotesize\ttfamily,
+keywordstyle=\color{javapurple}\bfseries,
+stringstyle=\color{javared},
+commentstyle=\color{javagreen},
+morecomment=[s][\color{javadocblue}]{/**}{*/},
+stepnumber=2,
+numbersep=10pt,
+tabsize=4,
+showspaces=false,
+showstringspaces=false}
+
+
+\title{Паттерн Singleton}
+\author{Есилевич Александр}
+
+\begin{document}
+
+\maketitle
+
+\begin{frame}[fragile]
+\frametitle{Назначение}
+Гарантирует, что у класс есть только один экземпляр, и предоставляет к нему
+глобальную точку доступа
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Примеры}
+\begin{itemize}
+\item файловая система
+\item журнал приложения
+\item оконный менеджер (графическая система)
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Реализация с помощью глобальной переменной}
+\begin{itemize}
+\item Даёт глобальный доступ к объекту
+\item Не запрещает создавать другие экземпляры класса
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Паттерн Singleton}
+\begin{lstlisting}
+class Singleton {
+    public static instance() {
+        if(inst == null) {
+            // create instance
+        }
+        
+        return inst;
+    }
+    
+    // constructor is not public
+    protected Singleton() {}
+    
+    // public singleton operations
+    
+    private static Singleton inst;
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Пример использования: Abstract Factory}
+\begin{lstlisting}
+class ComponentFactory {
+    public static instance() {
+        if(inst == null) {
+            String style = readStyleFromConfig();
+            if(style == "style1")
+                inst = new Style1Factory();
+            else
+                inst = new Style2Factory();
+        }
+        
+        return inst;
+    }
+    
+    protected ComponentFactory() {}
+    
+    public abstract SystemButton createButton();
+    public abstract SystemEditBox createEditBox();
+    
+    private static ComponentFactory inst;
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Пример использования: Abstract Factory}
+\begin{lstlisting}
+SystemButton button1 =
+    ComponentFactory.instance().createButton();
+button1.setListener(...);
+
+SystemButton button2 =
+    ComponentFactory.instance().createButton();
+button2.setListener(...);
+\end{lstlisting}
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+\frametitle{Проблемы реализации}
+Как сделать так, чтобы наследников \lstinline{ComponentFactory} мог создавать
+только сам \lstinline{ComponentFactory}?
+\begin{itemize}
+\item В С++ -- сделать конструкторы наследников закрытыми и объявить \lstinline{ComponentFactory} другом;
+\item В Java -- использовать пакеты и использовать package-private модификатор доступа
+\item Сделать конструкторы наследников закрытыми, определить метод \lstinline{instance} в каждом из них,
+      и вызывать эти методы в \lstinline{ComponentFactory.instance}.
+\end{itemize}
+\end{frame}
+
+
+
+
+\begin{frame}[fragile]
+\frametitle{Результаты}
+\begin{itemize}
+\item контролируемый доступ к единственному экземпляру
+\item не засоряет пространство имён глобальными переменными
+\item допускает уточнение операций с помощью подклассов
+\item допускает переменное число экземпляров
+\end{itemize}
+\end{frame}
+
+
+
+\end{document}

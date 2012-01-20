@@ -1,0 +1,122 @@
+\documentclass[handout]{beamer}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{listings}
+
+%\ifx\pdftexversion\undefined
+%\usepackage[dvips]{graphicx}
+%\else
+%\usepackage[pdftex]{graphicx}
+%\DeclareGraphicsRule{*}{mps}{*}{}
+%#\fi
+
+\definecolor{javared}{rgb}{0.6,0,0} % for strings
+\definecolor{javagreen}{rgb}{0.25,0.5,0.35} % comments
+\definecolor{javapurple}{rgb}{0.5,0,0.35} % keywords
+\definecolor{javadocblue}{rgb}{0.25,0.35,0.75} % javadoc
+ 
+\lstset{language=Java,
+basicstyle=\footnotesize\ttfamily,
+keywordstyle=\color{javapurple}\bfseries,
+stringstyle=\color{javared},
+commentstyle=\color{javagreen},
+morecomment=[s][\color{javadocblue}]{/**}{*/},
+stepnumber=2,
+numbersep=10pt,
+tabsize=4,
+showspaces=false,
+showstringspaces=false}
+
+
+\title{Паттерн Abstract Factory}
+\author{Есилевич Александр}
+
+\begin{document}
+
+\maketitle
+
+\begin{frame}[fragile]
+\frametitle{Поддержка нескольких стилей графического интерфейса}
+Хочется добиться следующего:
+\begin{itemize}
+\item Приложение должно поддерживать несколько стилей графического интерфейса (обозначим их Style1 и Style2);
+\item Код приложения, отвечающий за графический интерфейс, не должен дублироваться для каждого стиля.
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Зафиксируем набор графических компонентов, используемых в приложении}
+Определим для каждого компонента и стиля подкласс
+\vspace{1cm}
+
+\begin{tabular}{|l|l|l|}
+\hline
+Компонент		&	Style1					&	Style2 	\\
+\hline
+Окно			&	Style1Window		& 	Style2Window   	\\
+Кнопка			&	Style1Button		&	Style2Button		\\
+Текстовое поле	&	Style1EditBox		&	Style2EditBox		\\
+Полоса прокрутки	&	Style1ScrollBar	&	Style2ScrollBar	\\
+\hline
+\end{tabular}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Диаграмма классов графических компонентов}
+\begin{center}
+\includegraphics{components.mps}
+\end{center}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\begin{center}
+Как сделать код приложения независимым от конкретного набора инструментов?
+\end{center}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Паттерн AbstractFactory}
+Назначение: предоставляет интерфейс для создания семейств взаимосвязанных объектов, не определяя конкретных классов
+этих объектов.
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Диаграмма классов с использованием AbstractFactory}
+\begin{center}
+\includegraphics{acomponents.mps}
+\end{center}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Диаграмма классов AbstractFactory}
+\begin{center}
+\includegraphics{abstract_factory.mps}
+\end{center}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Достоинства}
+\begin{itemize}
+\item Изолирует конкретные классы от клиента
+\item Упрощает замену семейства продуктов
+\item Гарантирует сочитаемость продуктов
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Недостатки}
+\begin{itemize}
+\item Поддержать новый вид продуктов трудно
+\end{itemize}
+\end{frame}
+
+\end{document}

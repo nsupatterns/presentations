@@ -1,0 +1,275 @@
+\documentclass[handout]{beamer}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{listings}
+
+%\ifx\pdftexversion\undefined
+%\usepackage[dvips]{graphicx}
+%\else
+%\usepackage[pdftex]{graphicx}
+%\DeclareGraphicsRule{*}{mps}{*}{}
+%#\fi
+
+\definecolor{javared}{rgb}{0.6,0,0} % for strings
+\definecolor{javagreen}{rgb}{0.25,0.5,0.35} % comments
+\definecolor{javapurple}{rgb}{0.5,0,0.35} % keywords
+\definecolor{javadocblue}{rgb}{0.25,0.35,0.75} % javadoc
+ 
+\lstset{language=Java,
+basicstyle=\footnotesize\ttfamily,
+keywordstyle=\color{javapurple}\bfseries,
+stringstyle=\color{javared},
+commentstyle=\color{javagreen},
+morecomment=[s][\color{javadocblue}]{/**}{*/},
+stepnumber=2,
+numbersep=10pt,
+tabsize=4,
+showspaces=false,
+showstringspaces=false}
+
+
+\title{Паттерн Visitor}
+\author{Есилевич Александр}
+
+\begin{document}
+
+\maketitle
+
+\begin{frame}[fragile]
+\frametitle{Выделение фигур}
+\begin{itemize}
+\item Пользователь кликает мышкой на фигуру
+\item Появляются точки выделения фигуры
+\item Пользователь либо перемещает точки выделения, либо перемещает всю фигуру
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Вопросы реализации}
+\begin{itemize}
+\item Как определить, что кликом в определённой точке выбирается какая-то фигура?
+\item Как определить какие точки выделения есть у объекта класса \lstinline{Shape}?
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Вопросы реализации}
+\begin{itemize}
+\item Для каждой конкретной фигуры можно определить область выделения
+\item Для каждой конкретной фигуры известны точки выделения
+\end{itemize}
+
+\vspace{1cm}
+
+Можно расширить интерфейс класа \lstinline{Shape} так, чтобы каждый объект
+этого класса умел определять, выделен ли он кликом в заданной точке, и 
+умел возвращать список точек выделения
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Класс SelectPoint}
+\begin{lstlisting}
+public abstract class SelectPoint {
+    public abstract Point getPos();
+    public abstract void setPos(Point newPos);
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Расширенный интерфейс класса Shape}
+\begin{lstlisting}
+public class Shape {
+    ...
+    
+    public abstract boolean trySelect(int x, int y);
+    public abstract int getSelectPointsCount();
+    public abstract SelectPoint getSelectPoint(int index);
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Реализация класса SelectTool}
+\begin{itemize}
+\item Четыре состояния: Started, Selected, Move, MovePoint
+\item В начальном состоянии при клике SelectTool вызывает \lstinline{trySelect} для всех
+      фигур и определяет выбранную
+\item В состоянии Selected для отрисовки вызывается \lstinline{getSelectPoint} для определния
+      положения точек выделения. При нажатии мыши по выделенной фигуре осуществляется переход
+      в состояние Move, При клике на точке -- переходв в состояние MovePoint
+\item При движении мыши в состоянии MovePoint у выбранной точки выделения меняется положение,
+      точка выделения меняет всю фигуру.
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Реализация точек редактирования для линии}
+\begin{lstlisting}
+class LineStartSelectPoint extends SelectPoint {
+    public LineStartSelectPoint(Line l) {
+        line = l;
+    }
+
+    public Point getPos() {
+        return line.getStart();
+    }
+
+    public void setPos(Point newPos) {
+        line.setStart(newPos);
+    }
+
+    private Line line;
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Реализация точек редактирования для линии}
+\begin{lstlisting}
+class LineEndSelectPoint extends SelectPoint {
+    public LineEndSelectPoint(Line l) {
+        line = l;
+    }
+
+    public Point getPos() {
+        return line.getEnd();
+    }
+
+    public void setPos(Point newPos) {
+        line.setEnd(newPos);
+    }
+
+    private Line line;
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Реализация точек редактирования для линии}
+\begin{lstlisting}
+class Line extends Shape {
+    ...
+    
+    public int getSelectPointsCount() {
+        return 2;
+    }
+
+    public SelectPoint getSelectPoint(int index) {
+        if(index == 0)
+            return new LineStartSelectPoint(this);
+        else
+            return new LineEndSelectPoint(this);
+    }
+
+    ...
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Недостатки}
+\begin{itemize}
+\item В класс \lstinline{Shape} добавились ''лишние'' методы, которые относятся к конкретному
+      инструменту, а не к фигуре
+\item При увеличении количества инструментов, зависящих от конкретных фигур, интерфейс
+      класса \lstinline{Shape} будет сильно разрастаться (пример инструмента - линии-коннекторы)
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Ключевая проблема}
+Нужен универсальный способ перебора всех фигур в списке и выполнения определённых действий
+в зависимости от типа фигуры.
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Решение}
+Паттерн Visitor -- описывает операцию, выполняемую с каждым оъектом некоторой структуры,
+при этом позволяя определить новую операцию не меняя классы объектов
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Применимость}
+\begin{itemize}
+\item Присутствуют объекты многих классов и требуется выполнять над ними операции, 
+      зависящие от конкретных классов
+\item Выполняемые операции не связаны между собой, поэтому не хочется засорять
+      ими базовый класс всех объектов
+\item Классы изменяются редко, а операции добавляются часто
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Диаграмма классов}
+\begin{center}
+\includegraphics{visitor.mps}
+\end{center}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Диаграмма классов для ShapeVisitor}
+\begin{center}
+\includegraphics{shape_visitor.mps}
+\end{center}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Реализация SelectPointsCollector для линии}
+\begin{lstlisting}
+class SelectPointsCollector extends ShapeVisitor {
+    public SelectPointsCollector(Point p) {
+        pos = p;
+    }
+    
+    public void visitLine(Line shape) {
+        points.add(new LineStartSelectPoint(shape));
+        points.add(new LineEndSelectPoint(shape));
+    }
+    
+    public SelectPointsList getPoints() { return points; }
+
+    private Point pos;
+    private SelectPointsList points;
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Преимущества}
+\begin{itemize}
+\item Упрощает добавление новых операций
+\item Объединяет родственные операции и отедяет друг от друга операции, не
+      имеющие отношения друг к другу
+\item Позволяет посещать различные структуры, не обязательно однородные
+\end{itemize}
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+\frametitle{Недостатки}
+\begin{itemize}
+\item Затрудняет добавление новых классов в иерархию
+\end{itemize}
+\end{frame}
+
+
+\end{document}

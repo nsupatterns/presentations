@@ -1,0 +1,563 @@
+\documentclass[handout]{beamer}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{listings}
+
+%\ifx\pdftexversion\undefined
+%\usepackage[dvips]{graphicx}
+%\else
+%\usepackage[pdftex]{graphicx}
+%\DeclareGraphicsRule{*}{mps}{*}{}
+%#\fi
+
+\definecolor{javared}{rgb}{0.6,0,0} % for strings
+\definecolor{javagreen}{rgb}{0.25,0.5,0.35} % comments
+\definecolor{javapurple}{rgb}{0.5,0,0.35} % keywords
+\definecolor{javadocblue}{rgb}{0.25,0.35,0.75} % javadoc
+ 
+\lstset{language=Java,
+basicstyle=\footnotesize\ttfamily,
+keywordstyle=\color{javapurple}\bfseries,
+stringstyle=\color{javared},
+commentstyle=\color{javagreen},
+morecomment=[s][\color{javadocblue}]{/**}{*/},
+stepnumber=2,
+numbersep=10pt,
+tabsize=4,
+showspaces=false,
+showstringspaces=false}
+
+
+\title{Паттерн State}
+\author{Есилевич Александр}
+
+\begin{document}
+
+\maketitle
+
+\begin{frame}[fragile]
+\frametitle{Интерактивное рисование фигур}
+\begin{itemize}
+\item Пользователь выбирает инструмент в панели
+\item Пользователь выполняет манипуляции мышью/клавиатурой на изображении
+\item В изображении выделяются фигуры или добавляются новые
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Первая реализация}
+\begin{itemize}
+\item В классе \lstinline{Scene} храним ID выбранного инструмента
+\item Обрабатываем события мыши/клавиатуры тем или иным образом в
+      зависмиости от ID выбранного инструмента
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Первая реализация}
+\begin{lstlisting}
+enum ToolId { TOOL_SELECT, TOOL_LINE,
+              TOOL_RECTANGLE, TOOL_CIRCLE }
+ToolId selectedToolId;
+
+void onMouseDown(int x, int y) {
+    switch(selectedToolId) {
+    case TOOL_LINE:
+        // line drawing logic
+        break;
+    case ...
+    }
+}
+
+void onMouseUp(int x, int y) { ... }
+void onMouseMove(int x, int y) { .. }
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Как можно улучшить?}
+\begin{itemize}
+\item Логика обработки каждого инструмента разная
+\item Инструменты не зависят друг от друга
+\item Инструменты обрабатывают одни и те же действия пользователя
+\end{itemize}
+\vspace{1cm}
+Вывод: можно создать абстрактный класс \lstinline{Tool},
+определяющий интерфейс обработки действий пользователя,
+и опеделить класс-наследник для каждого инструмента
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Класс Tool и наследники}
+\begin{center}
+\includegraphics{tools.mps}
+\end{center}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Реализация класса LineTool}
+Есть три состояния:
+\begin{itemize}
+\item \lstinline{START} -- рисование только начали
+\item \lstinline{PRESSED} -- нажали кнопку мыши, ''тянем'' линию, пока
+   	  кнопку не отпустят
+\item \lstinline{FREE_MOVE} -- кнопку мыши отпустили там же, где нажали,
+   	 ''тянем'' линию, пока кнопку ещё раз не нажмут
+\end{itemize}
+\vspace{1cm}
+Класс \lstinline{LineTool} хранит ссылку на список фигур, состояние
+рисования, начальные и конечные координаты линии.
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Реализация класса LineTool}
+\begin{lstlisting}
+public class LineTool extends Tool {
+    enum State { START, PRESSED, FREE_MOVE }
+    
+    private ShapeList shapes;
+    private State state;
+    private int startX, startY, endX, endY;
+    
+    public void onMouseDown() { ... }
+    public void onMouseUp() { ... }
+    public void onMouseMove() { ... }
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Реализация класса LineTool}
+\begin{lstlisting}
+public void onMouseDown(int x, int y) {
+    switch(state) {
+    case START:
+        startX = x;
+        startY = y;
+        endX = x;
+        endY = y;
+        state = State.PRESSED;
+        break;
+    case PRESSED:
+        break;
+    case FREE_MOVE:
+        break;
+    }
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Реализация класса LineTool}
+\begin{lstlisting}
+public void onMouseMove(int x, int y) {
+    switch(state) {
+    case START:
+        break;
+
+    case PRESSED:
+    case FREE_MOVE:
+        endX = x;
+        endY = y;
+        break;
+    }
+    endX = x;
+    endY = y;
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Реализация класса LineTool}
+\begin{lstlisting}
+public void onMouseUp(int x, int y) {
+    switch(state) {
+    case START:
+        break;
+
+    case PRESSED:
+        if(startX == x && startY == y) {
+            state = State.FREE_MOVE;
+        } else {
+            shapes.add(new Line(startX, startY, x, y));
+            state = State.START;
+        }
+        break;
+
+    case FREE_MOVE:
+        shapes.add(new Line(startX, startY, x, y));
+        state = State.START;
+        break;
+    }
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Реализация класса LineTool}
+\begin{lstlisting}
+public void draw(SystemCanvas canvas) {
+
+    if(state == State.START) {
+        return;
+    }
+
+    (new Line(startX, startY, endX, endY)).draw(canvas);
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Недостатки реализации LineTool}
+\begin{itemize}
+\item Присутствуют большие операторы \lstinline{switch}
+\item Логика перехода между состояниями явно не выделена
+\item Код сложен для понимания и добавления новой функциональности
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\begin{center}
+Решение: ввести отдельный класс для каждого состояния
+\end{center}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Диаграмма классов LineToolState}
+\begin{center}
+\includegraphics{linetool.mps}
+\end{center}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Кто будет изменять состояние?}
+\begin{itemize}
+\item класс \lstinline{LineTool}
+\item каждое состояние будет само изменять состояние
+    \begin{itemize}
+    \item классы состояний меют доступ к \lstinline{LineTool}
+    \item обработчики пользовательского ввода будут возвращают
+          новое состояние
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Модифицированный класс LineTool}
+\begin{lstlisting}
+public class LineTool extends Tool {
+    LineTool(ShapeList list) {
+        shapes = list;
+        state = new LineToolStateStart(shapes);
+    }
+    public void draw(SystemCanvas canvas) {
+        state.draw(canvas); }
+    public void reset() {
+        state = new LineToolStateStart(shapes) ]
+    }
+    public void onMouseDown(int x, int y) {
+        state = state.onMouseDown(x, y);
+    }
+    public void onMouseUp(int x, int y) {
+        state = state.onMouseUp(x, y);
+    }
+    public void onMouseMove(int x, int y) {
+        state = state.onMouseMove(x, y);
+    }
+    ShapeList shapes;
+    LineToolState state;
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Класс LineToolStateStart}
+\begin{lstlisting}
+class LineToolStateStart extends LineToolState {
+    public LineToolStateStart(ShapeList list) {
+        shapes = list;
+    }
+
+    public void draw(java.awt.Graphics canvas) {}
+
+    public LineToolState onMouseDown(int x, int y) {
+        return new LineToolStatePressed(shapes, x, y);
+    }
+
+    public LineToolState onMouseUp(int x, int y) {
+    	return this;
+    }
+    
+    public LineToolState onMouseMove(int x, int y) {
+        return this;
+    }
+
+    private ShapeList shapes;
+};
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Класс LineToolStatePressed}
+\begin{lstlisting}
+    private ShapeList shapes;
+    private int startX, startY, endX, endY;
+    
+    public LineToolStatePressed(ShapeList list,
+                                int x, int y) {
+        shapes = list;
+        startX = x;
+        startY = y;
+        endX = x;
+        endY = y;
+    }
+    
+    public void draw(java.awt.Graphics canvas) {
+        (new Line(startX, startY, endX, endY))
+            .draw(canvas);
+    }
+    
+    public LineToolState onMouseDown(int x, int y) {
+        return this;
+    }
+\end{lstlisting}
+\end{frame}
+    
+\begin{frame}[fragile]
+\frametitle{Класс LineToolStatePressed}
+\begin{lstlisting}      
+    public LineToolState onMouseUp(int x, int y) {
+        if(x == startX && y == startY) {
+            return new LineToolStateFreeMove(shapes, x, y);
+        } else {
+            shapes.add(new Line(startX, startY, x, y));
+            return new LineToolStateStart(shapes);
+        }
+    }
+    
+    public LineToolState onMouseMove(int x, int y) {
+        endX = x; endY = y; return this;
+    }
+\end{lstlisting}
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+\frametitle{Назначение}
+Паттерн State позволяет объекту изменять своё поведение в зависимости
+от внутреннего состояния. Извне создаётся впечатление, что изменился
+класс объекта.
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Диаграмма классов}
+\begin{center}
+\includegraphics{state.mps}
+\end{center}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Результаты}
+Преимущества:
+\begin{itemize}
+\item Локализует зависящее от состояния поведение и делит его
+      на части, соответствующие состояниям
+\item Избавляет от необходимости использования больших операторов
+      \lstinline{if} и \lstinline{switch}
+\item Делает явными переходы между состояниями
+\item Объекты состояния можно разделять
+\end{itemize}
+
+\vspace{1cm}
+
+Недостатки:
+\begin{itemize}
+\item Увеличивает число классов
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Класс Tool тоже может быть паттерном State}
+\begin{itemize}
+\item Определяем один класс \lstinline{ToolState} для всех инструментов
+\item Задаём начальное состояние при выборе инструмента
+\item В качестве контекста в данном случае выступает класс \lstinline{Scene}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Пример: TcpConnection}
+\begin{lstlisting}
+public class TcpConnection {
+    public bool connect(String addr, int port);
+    public void close();    
+    public void send(byte [] data);
+    public byte [] recv();
+    public void listen(int port);
+    public void accept();
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Пример: TcpConnection}
+\begin{lstlisting}
+public class TcpConnection {
+    private enum State { CLOSED, CONNECTED, LISTEN }
+    private State state;
+    
+    TcpConnection() {
+        state = CLOSED;
+    }
+    
+    public bool connect(String addr, int port) {
+        if (state == CONNECTED || state == LISTEN) {
+            // throw exception
+        }
+        
+        if (connectToRemoteHost(addr, port)) {
+            state = CONNECTED;
+            return true;
+        }
+        return false;
+    }
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Пример: TcpConnection}
+\begin{lstlisting}
+public class TcpConnection {
+    public void send(byte [] data) {
+        if (state != CONNECTED) {
+            // throw exception
+        }
+        
+        // send data
+    }
+    
+    public void close() {
+        if (state == LISTEN) {
+            // cancel listening
+        } else if(state == CONNECTED) {
+            // send disconnect packet
+        } else {
+            // throw exception
+        }
+        
+        state = CLOSED;
+    }
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Пример: TcpConnection}
+\begin{center}
+\includegraphics{tcpconnection.mps}
+\end{center}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Пример: TcpConnection}
+\begin{lstlisting}
+public class TcpClosed {
+    public bool connect(String addr, int port) {
+        if (connectToRemoteHost(addr, port)) {
+            changeState(new TcpConnected());
+            return true;
+        }
+        return false;
+    }
+    
+    public void listen(int port) {
+        changeState(new TcpListen());
+    }
+    
+    public void send() { /* throw exception */ }
+    public void recv() { /* throw exception */ }    
+    public void close() { /* throw exception */ }
+    public void accept() { /* throw exception */ }
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Пример: TcpConnection}
+\begin{lstlisting}
+public class TcpListen {   
+    public void close() {
+        // stop listening
+        changeState(new TcpClosed());
+    }
+    
+    public void accept() {
+        // accept connection
+        changeState(new TcpConnected());
+    }
+    
+    public bool connect() { /* throw exception */ }
+    public void send() { /* throw exception */ }
+    public void recv() { /* throw exception */ }
+    public void listen() { /* throw exception */ }
+}
+\end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Пример: TcpConnection}
+\begin{lstlisting}
+public class TcpConnected {  
+    public void close() {
+        // close connection
+        changeState(new TcpClose());
+    }
+    
+    public void send(byte [] data) {
+        // send data
+    }
+
+    public byte [] recv() {
+        // receive data
+    }
+    
+    public bool connect() { /* throw exception */ }
+    public void listen() { /* throw exception */ }
+    public void accept() { /* throw exception */ }
+}
+\end{lstlisting}
+\end{frame}
+
+
+
+\end{document}

@@ -1,0 +1,145 @@
+\documentclass[handout]{beamer}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{listings}
+
+%\ifx\pdftexversion\undefined
+%\usepackage[dvips]{graphicx}
+%\else
+%\usepackage[pdftex]{graphicx}
+%\DeclareGraphicsRule{*}{mps}{*}{}
+%#\fi
+
+\definecolor{javared}{rgb}{0.6,0,0} % for strings
+\definecolor{javagreen}{rgb}{0.25,0.5,0.35} % comments
+\definecolor{javapurple}{rgb}{0.5,0,0.35} % keywords
+\definecolor{javadocblue}{rgb}{0.25,0.35,0.75} % javadoc
+ 
+\lstset{language=Java,
+basicstyle=\footnotesize\ttfamily,
+keywordstyle=\color{javapurple}\bfseries,
+stringstyle=\color{javared},
+commentstyle=\color{javagreen},
+morecomment=[s][\color{javadocblue}]{/**}{*/},
+stepnumber=2,
+numbersep=10pt,
+tabsize=4,
+showspaces=false,
+showstringspaces=false}
+
+
+\title{Паттерн Strategy}
+\author{Есилевич Александр}
+
+\begin{document}
+
+\maketitle
+
+\begin{frame}[fragile]
+\frametitle{Инструмент соединения фигур}
+\begin{itemize}
+\item Пользователь выбирает инструмент соединения
+\item Каждая фигура имеет набор соединительных точек
+\item При наведении на соединительную точку она подсвечивается
+\item После клика на точке пользователь тянет линию к другой соединительной точке
+\item Соединительные линии перемещаются при изменении/перемещении фигур
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Инструмент соединения фигур}
+Существенное требование: доступно несколько вариантов соединительных линий, пользователь
+может выбирать и изменять тип соединительной линии:
+     \begin{itemize}
+     \item Прямые линии
+     \item Ломаные линии, идущие по вертикали и горизонтали
+     \item Кривые линии
+     \item Линии, огибающие фигуры
+     \end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Реализация}
+\begin{itemize}
+\item Для идентификации соединительных точек создадим класс \lstinline{ConnectPoint},
+      по аналогии с классом \lstinline{SelectPoint}
+\item Для определения точек соединения для каждой фигуры используем паттерн Visitor
+\item Каждая соединительная линия - тоже фигура, которую можно выделять и перемещать,
+      поэтому создадим класс \lstinline{ConnectorShape}, унаследованный от класса
+      \lstinline{Shape}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Возникающие проблемы}
+\begin{itemize}
+\item Как реализовать изменение типа соединительной линии?
+\item Для разных типов соединительных линий меняется алгоритм отрисовки и выделения,
+      но все типы соединительных линий содержат ссылки на два объекта
+      класса \lstinline{ConnectPoint}, и алгоритм перемещения точек соединения одинаковый.
+      Как избежать дублирования кода?
+\item Алгоритм отрисовки используется не только в нарисованной соединительной линии,
+      но и при её рисовании. Как избежать дублирования кода?
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Вариант реализации}
+Сделаем класс \lstinline{ConnectorShape} абстрактным, и унаследуем от него
+      отдельный класс для каждой соединительной линии
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+\frametitle{Недостатки}
+\begin{itemize}
+\item Как изменять стратегию отрисовки у существующей соединительной линии? Это не удобно --
+      инструменту изменения свойств требуется удалить линию из списка фигур, и создать другую
+\item Как переиспользовать алгоритм отрисовки при рисовании линии?
+\end{itemize}
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+\frametitle{Решение}
+Паттерн Strategy -- отдедяет семейство алгоритмов, инкапсулирует каждый из них, и делает
+из взаимозаменяемыми
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Диаграмма классов}
+\begin{center}
+\includegraphics{strategy.mps}
+\end{center}
+\end{frame}
+
+
+
+\begin{frame}[fragile]
+\frametitle{Диаграмма классов для ConnectStrategy}
+\begin{center}
+\includegraphics{connect_strategy.mps}
+\end{center}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Результаты}
+\begin{itemize}
+\item Нет необходимости в громоздских условных операторах
+\item Нет необходимости порождать новые классы для каждой пары Context + алгоритм
+\item Алогоритм может быть переиспользован в разных контекстах
+\end{itemize}
+\end{frame}
+
+
+
+\end{document}
